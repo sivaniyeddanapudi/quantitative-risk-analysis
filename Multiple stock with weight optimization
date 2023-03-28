@@ -1,0 +1,93 @@
+# Import required libraries
+import yfinance as yf
+import pandas as pd
+import numpy as np
+from scipy.optimize import minimize
+import matplotlib.pyplot as plt
+
+# Define the stock ticker symbols
+tickers = ["TICKER 1", "TICKER 2", "TICKER 3", "TICKER 4"]
+
+# Get the stock data from Yahoo Finance for the last 5 years
+stock_data = yf.download(tickers, period="5y")
+
+# Get the historical prices for the stocks
+historical_prices = stock_data["Close"]
+
+# Calculate the daily returns for the stocks
+daily_returns = historical_prices.pct_change()
+
+# Calculate the mean daily return for each stock
+mean_returns = daily_returns.mean()
+
+# Calculate the standard deviation of daily returns for each stock
+std_devs = daily_returns.std()
+
+# Calculate the annualized volatility of returns for each stock
+volatilities = std_devs * (252 ** 0.5)
+
+# Calculate the Value at Risk (VaR) for each stock
+var_95 = daily_returns.quantile(0.05)
+
+# Calculate the Conditional Value at Risk (CVaR) for each stock
+cvar_95 = daily_returns[daily_returns <= var_95].mean()
+
+# Print the results for each stock
+for i in range(len(tickers)):
+    print("Quantitative Risk Profile for " + tickers[i] + ":")
+    print("Mean Daily Return: {:.2%}".format(mean_returns[i]))
+    print("Standard Deviation of Daily Returns: {:.2%}".format(std_devs[i]))
+    print("Annualized Volatility: {:.2%}".format(volatilities[i]))
+    print("Value at Risk (95% Confidence): {:.2%}".format(var_95[i]))
+    print("Conditional Value at Risk (95% Confidence): {:.2%}".format(cvar_95[i]))
+
+# Plot the historical prices for each stock
+plt.figure(figsize=(12,6))
+historical_prices.plot()
+plt.title("Historical Prices for " + ', '.join(tickers))
+plt.xlabel("Date")
+plt.ylabel("Price")
+plt.show()
+
+# Plot the daily returns for each stock
+plt.figure(figsize=(12,6))
+daily_returns.plot()
+plt.title("Daily Returns for " + ', '.join(tickers))
+plt.xlabel("Date")
+plt.ylabel("Return")
+plt.show()
+
+# Plot the distribution of daily returns with VaR and CVaR for each stock
+plt.figure(figsize=(12,6))
+for i in range(len(tickers)):
+    plt.hist(daily_returns[tickers[i]], bins=50, alpha=0.5, label=tickers[i])
+plt.axvline(var_95[0], color='r', linestyle='dashed', linewidth=2, label="VaR")
+plt.axvline(cvar_95[0], color='g', linestyle='dashed', linewidth=2, label="CVaR")
+plt.title("Daily Returns Distribution with VaR and CVaR for " + ', '.join(tickers))
+plt.xlabel("Return")
+plt.ylabel("Frequency")
+plt.legend(loc="upper left")
+plt.show()
+
+# Define the risk-to-return ratio objective function for the optimization model
+def risk_return_ratio(weights):
+    mean_return = np.dot(weights, mean_returns)
+    std_dev = np.sqrt(np.dot(weights.T, np.dot(daily_returns.cov(), weights)))
+    return -mean_return / std_dev
+
+# Define the constraints for the optimization model
+constraints = {"type": "eq", "fun": lambda x: np.sum(x) - 1}
+
+# Define the bounds for the optimization model
+bounds = [(0,1)] * len(tickers)
+
+# Define the initial guess for the optimization model
+guess = [1/len(tickers)] * len(tickers)
+
+# Run the optimization model
+result = minimize(risk_return_ratio, guess, method="SLSQP", bounds=bounds, constraints=constraints)
+
+# Print the results of the optimization model
+print("Optimal Weights for Risk-to-Return Ratio:")
+for i in range(len(tickers)):
+    print(tickers[i] + ": {:.2%}".format(result.x[i]))
