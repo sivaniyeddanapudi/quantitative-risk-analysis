@@ -1,0 +1,29 @@
+#importing libraries
+import yfinance as yf
+
+# Define the stock ticker symbol
+ticker = "TICKER NAME"
+
+# Get the stock data from Yahoo Finance
+stock_data = yf.Ticker(ticker)
+
+# Get the historical prices for the stock
+historical_prices = stock_data.history(period="max")
+
+# Calculate the daily returns for the stock
+daily_returns = historical_prices["Close"].pct_change()
+
+# Calculate the mean daily return
+mean_return = daily_returns.mean()
+
+# Calculate the standard deviation of daily returns
+std_dev = daily_returns.std()
+
+# Calculate the annualized volatility of returns
+volatility = std_dev * (252 ** 0.5)
+
+# Calculate the Value at Risk (VaR) for the stock
+var_95 = daily_returns.quantile(0.05)
+
+# Calculate the Conditional Value at Risk (CVaR) for the stock
+cvar_95 = daily_returns[daily_returns <= var_95].mean()
