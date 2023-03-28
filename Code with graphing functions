@@ -1,0 +1,65 @@
+# Importing required libraries
+import yfinance as yf
+import matplotlib.pyplot as plt
+
+# Define the stock ticker symbol
+ticker = "TICKER NAME"
+
+# Get the stock data from Yahoo Finance
+stock_data = yf.Ticker(ticker)
+
+# Get the historical prices for the stock
+historical_prices = stock_data.history(period="max")
+
+# Plot the historical prices
+plt.figure(figsize=(12, 6))
+plt.plot(historical_prices["Close"])
+plt.title(ticker + " Historical Prices")
+plt.xlabel("Date")
+plt.ylabel("Price ($)")
+plt.show()
+
+# Calculate the daily returns for the stock
+daily_returns = historical_prices["Close"].pct_change()
+
+# Plot the daily returns
+plt.figure(figsize=(12, 6))
+plt.plot(daily_returns)
+plt.title(ticker + " Daily Returns")
+plt.xlabel("Date")
+plt.ylabel("Return")
+plt.show()
+
+# Calculate the mean daily return
+mean_return = daily_returns.mean()
+
+# Calculate the standard deviation of daily returns
+std_dev = daily_returns.std()
+
+# Calculate the annualized volatility of returns
+volatility = std_dev * (252 ** 0.5)
+
+# Calculate the Value at Risk (VaR) for the stock
+var_95 = daily_returns.quantile(0.05)
+
+# Calculate the Conditional Value at Risk (CVaR) for the stock
+cvar_95 = daily_returns[daily_returns <= var_95].mean()
+
+# Print the results
+print("Quantitative Risk Profile for " + ticker + ":")
+print("Mean Daily Return: {:.2%}".format(mean_return))
+print("Standard Deviation of Daily Returns: {:.2%}".format(std_dev))
+print("Annualized Volatility: {:.2%}".format(volatility))
+print("Value at Risk (95% Confidence): {:.2%}".format(var_95))
+print("Conditional Value at Risk (95% Confidence): {:.2%}".format(cvar_95))
+
+# Plot the VaR and CVaR
+plt.figure(figsize=(12,6))
+plt.hist(daily_returns, bins=50)
+plt.axvline(var_95, color='r', linestyle='dashed', linewidth=2, label="VaR")
+plt.axvline(cvar_95, color='g', linestyle='dashed', linewidth=2, label="CVaR")
+plt.title(ticker + " Daily Returns Distribution with VaR and CVaR")
+plt.xlabel("Return")
+plt.ylabel("Frequency")
+plt.legend(loc="upper left")
+plt.show()
